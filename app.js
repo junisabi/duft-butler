@@ -25,7 +25,8 @@ const FAMILIES = {
 };
 
 const OCCASIONS = {
-  gym:      { label: 'Gym',      icon: '🏋️', warmth: -2.5, strength: 1.5, word: 'dezent' },
+  uni:      { label: 'Uni',      icon: '🎓', warmth: -0.2, strength: 2.5, word: 'hörsaaltauglich' },
+  gym:     { label: 'Gym',      icon: '🏋️', warmth: -2.5, strength: 1.5, word: 'dezent' },
   buero:    { label: 'Büro',     icon: '💼', warmth: -0.3, strength: 2.5, word: 'unaufdringlich' },
   date:     { label: 'Date',     icon: '🌹', warmth: 0.6,  strength: 3.5, word: 'verführerisch' },
   ausgehen: { label: 'Ausgehen', icon: '🥂', warmth: 0.8,  strength: 4.3, word: 'mit Projektion' },
@@ -211,6 +212,23 @@ function save() {
 
 let db = load();
 if (fresh) save();
+migrate();
+
+// Einmalige Daten-Updates für bereits installierte Apps
+function migrate() {
+  let changed = false;
+  // v2: neuer Anlass „Uni“ – Düfte, die fürs Büro oder den Alltag gedacht und nicht zu laut sind, eignen sich auch für die Uni
+  if (!db.settings.migratedUni) {
+    for (const p of db.perfumes) {
+      if (!p.occasions.includes('uni') && p.strength <= 4 && (p.occasions.includes('buero') || p.occasions.includes('alltag'))) {
+        p.occasions.push('uni');
+      }
+    }
+    db.settings.migratedUni = true;
+    changed = true;
+  }
+  if (changed) save();
+}
 
 const state = {
   view: 'today', occasion: null, excluded: [], topId: null,
@@ -315,7 +333,7 @@ function desiredProfile(occ, w) {
     : warmth < 1.5 ? 'warm und holzig'
     : 'warm und süß';
   const style = words;
-  if (occ === 'gym' || occ === 'buero') words += `, ${o.word}`;
+  if (occ === 'gym' || occ === 'buero' || occ === 'uni') words += `, ${o.word}`;
   const parts = w ? [`${Math.round(w.temp)} °C`, wmo(w.code)[0]] : [SEASONS[season]];
   parts.push(o.label);
   return { warmth, strength, season, style, words, headline: `${parts.join(', ')} → ${words}` };
@@ -989,7 +1007,7 @@ function importData(file) {
     const keepLoc = db.settings.location;
     db = normalize(d);
     if (!db.settings.location) db.settings.location = keepLoc;
-    save(); closeSheet(); resetUiState(); renderAll(); loadWeather();
+    migrate(); save(); closeSheet(); resetUiState(); renderAll(); loadWeather();
     toast('Backup importiert');
   };
   reader.readAsText(file);
@@ -1086,7 +1104,7 @@ document.addEventListener('click', (e) => {
     case 'load-samples':
       if (!confirm('Alle aktuellen Daten (inkl. Tagebuch und Wunschliste) durch die Startsammlung ersetzen?')) break;
       { const loc = db.settings.location; db = sampleData(); db.settings.location = loc; }
-      save(); closeSheet(); resetUiState(); renderAll(); loadWeather(); toast('Startsammlung geladen');
+      migrate(); save(); closeSheet(); resetUiState(); renderAll(); loadWeather(); toast('Startsammlung geladen');
       break;
     case 'wipe':
       if (!confirm('Wirklich ALLES löschen? Das lässt sich nicht rückgängig machen.\nTipp: Vorher exportieren.')) break;
