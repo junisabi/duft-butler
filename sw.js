@@ -1,6 +1,6 @@
 // Service Worker: macht die App offline-fähig.
 // Bei Änderungen an den Dateien die Versionsnummer erhöhen, damit Handys das Update laden.
-const CACHE = 'duft-butler-v2';
+const CACHE = 'duft-butler-v3';
 const ASSETS = [
   './',
   './index.html',

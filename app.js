@@ -53,6 +53,107 @@ const ALIASES = {
   saffron: 'safran', pineapple: 'ananas', birch: 'birke', rum: 'rum', cacao: 'kakao', cocoa: 'kakao',
 };
 
+/* ---------- Layering: Noten → Akkord-Kategorien ---------- */
+// Reihenfolge zählt: das erste passende Stichwort gewinnt (z. B. „Veilchenblatt“ vor „Veilchen“)
+const NOTE_KEYWORDS = [
+  ['veilchenblatt', 'kraut'], ['feigenblatt', 'kraut'], ['muskateller', 'kraut'], ['grüne minze', 'kraut'],
+  ['grüner weihrauch', 'amber'], ['grüner apfel', 'frucht'], ['orangenblüte', 'blume'], ['hibiskus', 'blume'],
+  ['melone', 'frucht'], ['ambrette', 'moschus'], ['kokos', 'gourmand'], ['bittermandel', 'gourmand'], ['zyanid', 'gourmand'],
+  ['harz', 'amber'], ['balsam', 'amber'],
+  // Zitrus
+  ['zitrus', 'zitrus'], ['zitron', 'zitrus'], ['bergamott', 'zitrus'], ['grapefruit', 'zitrus'], ['mandarin', 'zitrus'],
+  ['orange', 'zitrus'], ['yuzu', 'zitrus'], ['limette', 'zitrus'], ['petitgrain', 'zitrus'],
+  // Frucht
+  ['apfel', 'frucht'], ['birne', 'frucht'], ['pfirsich', 'frucht'], ['himbeer', 'frucht'], ['johannisbeer', 'frucht'],
+  ['pflaume', 'frucht'], ['kirsch', 'frucht'], ['mango', 'frucht'], ['ananas', 'frucht'], ['frucht', 'frucht'],
+  ['früchte', 'frucht'], ['aprikose', 'frucht'], ['feige', 'frucht'], ['dattel', 'frucht'], ['sapo', 'frucht'], ['rhabarber', 'frucht'],
+  // Blüten
+  ['rose', 'blume'], ['jasmin', 'blume'], ['iris', 'blume'], ['veilchen', 'blume'], ['tuberose', 'blume'], ['ylang', 'blume'],
+  ['magnolie', 'blume'], ['lilie', 'blume'], ['maiglöckchen', 'blume'], ['gardenie', 'blume'], ['osmanthus', 'blume'],
+  ['geranie', 'blume'], ['heliotrop', 'blume'], ['tiaré', 'blume'], ['blüte', 'blume'], ['hyazinthe', 'blume'],
+  ['ringelblume', 'blume'], ['neroli', 'blume'], ['hedion', 'blume'],
+  // Kräuter & Grün
+  ['lavendel', 'kraut'], ['lavandin', 'kraut'], ['minze', 'kraut'], ['rosmarin', 'kraut'], ['salbei', 'kraut'],
+  ['basilikum', 'kraut'], ['matcha', 'kraut'], ['tee', 'kraut'], ['fenchel', 'kraut'], ['verbene', 'kraut'],
+  ['thymian', 'kraut'], ['oregano', 'kraut'], ['grün', 'kraut'], ['wacholder', 'kraut'], ['karotte', 'kraut'], ['angelika', 'kraut'],
+  // Gewürze
+  ['pfeffer', 'gewuerz'], ['zimt', 'gewuerz'], ['kardamom', 'gewuerz'], ['safran', 'gewuerz'], ['muskat', 'gewuerz'],
+  ['ingwer', 'gewuerz'], ['piment', 'gewuerz'], ['kümmel', 'gewuerz'], ['koriander', 'gewuerz'], ['nelke', 'gewuerz'],
+  // Amber & Harze
+  ['amber', 'amber'], ['ambra', 'amber'], ['ambrox', 'amber'], ['ambertonic', 'amber'], ['ambrofix', 'amber'], ['labdanum', 'amber'],
+  ['benzoe', 'amber'], ['weihrauch', 'amber'], ['myrrhe', 'amber'], ['opoponax', 'amber'], ['elemi', 'amber'], ['zistrose', 'amber'],
+  // Süße / Gourmand
+  ['vanille', 'gourmand'], ['tonka', 'gourmand'], ['karamell', 'gourmand'], ['pralin', 'gourmand'], ['schokolade', 'gourmand'],
+  ['kakao', 'gourmand'], ['kaffee', 'gourmand'], ['mandel', 'gourmand'], ['honig', 'gourmand'], ['zucker', 'gourmand'], ['amaretto', 'gourmand'],
+  // Boozy
+  ['rum', 'alkohol'], ['cognac', 'alkohol'], ['wein', 'alkohol'],
+  // Dunkel
+  ['tabak', 'dunkel'], ['leder', 'dunkel'], ['rauch', 'dunkel'], ['oud', 'dunkel'], ['castoreum', 'dunkel'], ['erde', 'dunkel'],
+  // Hölzer
+  ['holz', 'holz'], ['hölzer', 'holz'], ['zeder', 'holz'], ['vetiver', 'holz'], ['guajak', 'holz'], ['zypresse', 'holz'],
+  ['cypriol', 'holz'], ['patchouli', 'holz'], ['akigala', 'holz'], ['palo santo', 'holz'], ['amyris', 'holz'], ['birke', 'holz'],
+  ['eiche', 'holz'], ['moos', 'holz'], ['tanne', 'holz'], ['palisander', 'holz'], ['kaschmir', 'holz'],
+  // Moschus & Pudrig
+  ['moschus', 'moschus'], ['talkum', 'moschus'], ['aldehyd', 'moschus'], ['pudrig', 'moschus'],
+  // Aquatisch
+  ['meer', 'aquatisch'], ['aquat', 'aquatisch'], ['mineral', 'aquatisch'], ['eis-', 'aquatisch'],
+];
+const CAT_LABEL = {
+  zitrus: 'Zitrus', frucht: 'Frucht', blume: 'Blüten', kraut: 'Kräuter', gewuerz: 'Gewürze', amber: 'Amber & Harze',
+  gourmand: 'Süße', alkohol: 'Boozy-Noten', dunkel: 'Tabak, Leder & Oud', holz: 'Hölzer', moschus: 'Moschus', aquatisch: 'Aquatisches',
+};
+const CAT_WARMTH = {
+  zitrus: -2, aquatisch: -2, kraut: -1, frucht: -0.5, blume: 0, moschus: 0.3, holz: 0.8,
+  gewuerz: 1.2, amber: 1.5, alkohol: 1.5, dunkel: 1.6, gourmand: 2,
+};
+const FAMILY_CAT = {
+  zitrisch: 'zitrus', aquatisch: 'aquatisch', frisch: 'zitrus', gruen: 'kraut', aromatisch: 'kraut', fruchtig: 'frucht',
+  blumig: 'blume', pudrig: 'moschus', holzig: 'holz', wuerzig: 'gewuerz', ledrig: 'dunkel', suess: 'gourmand',
+  gourmand: 'gourmand', orientalisch: 'amber',
+};
+// Wie gut sich zwei Akkorde beim Layern ergänzen (-1 = beißt sich, 1 = Traumpaar) + Begründung
+const PAIRS = {
+  'gourmand|zitrus': [1, 'Zitrus hellt die Süße auf und macht sie leichter'],
+  'dunkel|gourmand': [1, 'Süße rundet Tabak, Leder & Oud weich ab'],
+  'blume|dunkel': [1, 'Blüten auf Oud & Leder – ein Layering-Klassiker'],
+  'gourmand|kraut': [0.8, 'Kräuter-Frische trifft Süße – wie Lavendel auf Vanille'],
+  'gewuerz|gourmand': [0.8, 'Gewürze geben der Süße Tiefe'],
+  'alkohol|gourmand': [0.9, 'Boozy-Noten und Süße – wie ein Dessert-Cocktail'],
+  'blume|gourmand': [0.8, 'Blüten werden durch Süße cremig und weich'],
+  'frucht|gourmand': [0.6, 'Frucht und Süße – saftig und verspielt'],
+  'gourmand|holz': [0.6, 'Hölzer geben der Süße Struktur'],
+  'gourmand|moschus': [0.6, 'Moschus macht die Süße hautnah und weich'],
+  'amber|gourmand': [0.7, 'Amber und Süße – warm und einhüllend'],
+  'aquatisch|gourmand': [-1, ''],
+  'dunkel|gewuerz': [0.8, 'Gewürze verstärken die dunkle, rauchige Seite'],
+  'amber|dunkel': [0.8, 'Harze und Oud/Leder – tief und orientalisch'],
+  'dunkel|frucht': [0.7, 'Frucht bringt Licht in das Dunkle'],
+  'dunkel|zitrus': [0.6, 'Zitrus lockert die schwere Basis auf'],
+  'alkohol|dunkel': [0.8, 'Boozy-Noten und Tabak – wie Zigarre und Cognac'],
+  'aquatisch|dunkel': [-1, ''],
+  'holz|zitrus': [0.9, 'Zitrus über Hölzern – frisch und elegant'],
+  'kraut|zitrus': [0.7, 'Zitrus und Kräuter – klassisch frisch'],
+  'moschus|zitrus': [0.6, 'Moschus verlängert die Zitrus-Frische'],
+  'amber|zitrus': [0.7, 'Zitrus-Spritzer über warmem Amber'],
+  'blume|zitrus': [0.5, 'Zitrus macht die Blüten luftiger'],
+  'blume|holz': [0.7, 'Hölzer erden die Blüten'],
+  'blume|moschus': [0.8, 'Moschus macht die Blüten weich und hautnah'],
+  'amber|blume': [0.7, 'Amber gibt den Blüten Wärme'],
+  'blume|gewuerz': [0.6, 'Gewürze machen die Blüten spannender'],
+  'blume|frucht': [0.6, 'Frucht und Blüten – saftig-floral'],
+  'gewuerz|holz': [0.7, 'Gewürze und Hölzer – trocken und maskulin'],
+  'amber|holz': [0.7, 'Amber macht die Hölzer warm und rund'],
+  'holz|kraut': [0.6, 'Kräuter und Hölzer – aromatisch und sauber'],
+  'amber|gewuerz': [0.8, 'Gewürze und Harze – orientalische Wärme'],
+  'amber|frucht': [0.5, 'Frucht über warmem Amber'],
+  'frucht|moschus': [0.5, 'Moschus macht die Frucht weicher'],
+  'aquatisch|kraut': [0.5, 'Aquatisch und Kräuter – sportlich frisch'],
+  'aquatisch|zitrus': [0.5, 'Zitrus und Meer – sommerlich'],
+  'alkohol|frucht': [0.6, 'Frucht und Boozy-Noten – wie ein Cocktail'],
+  'amber|aquatisch': [-0.5, ''],
+};
+const pairInfo = (a, b) => (a === b ? [0.35, ''] : PAIRS[[a, b].sort().join('|')] || [0.2, '']);
+
 /* ---------- Helfer ---------- */
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -128,6 +229,7 @@ function normalize(d) {
       .filter((w) => w && ids.has(String(w.perfumeId)) && /^\d{4}-\d{2}-\d{2}$/.test(w.date))
       .map((w) => ({
         id: w.id || uid(), perfumeId: String(w.perfumeId), date: w.date,
+        layerId: w.layerId && ids.has(String(w.layerId)) && String(w.layerId) !== String(w.perfumeId) ? String(w.layerId) : '',
         occasion: OCCASIONS[w.occasion] ? w.occasion : 'alltag',
         compliments: Math.max(0, parseInt(w.compliments, 10) || 0), note: String(w.note || ''),
       })),
@@ -232,17 +334,114 @@ function migrate() {
 
 const state = {
   view: 'today', occasion: null, excluded: [], topId: null,
+  layerKey: '', layerExcluded: [], layerId: null,
   search: '', sort: 'name', diaryLimit: 30,
   blind: { name: '', brand: '', family: '', top: '', heart: '', base: '' }, blindResult: null,
 };
 
 const perfumeById = (id) => db.perfumes.find((p) => p.id === id);
-const wearsOf = (id) => db.wears.filter((w) => w.perfumeId === id);
+// Gelayerte Düfte zählen als getragen (für Abwechslung, Statistik und vergessene Flaschen)
+const wearsOf = (id) => db.wears.filter((w) => w.perfumeId === id || w.layerId === id);
 const complimentsOf = (id) => wearsOf(id).reduce((a, w) => a + w.compliments, 0);
 function lastWornDate(id) {
   let m = null;
-  for (const w of db.wears) if (w.perfumeId === id && (!m || w.date > m)) m = w.date;
+  for (const w of db.wears) if ((w.perfumeId === id || w.layerId === id) && (!m || w.date > m)) m = w.date;
   return m;
+}
+const wearName = (w) => {
+  const p = perfumeById(w.perfumeId);
+  const l = w.layerId ? perfumeById(w.layerId) : null;
+  return (p ? p.name : '?') + (l ? ` + ${l.name}` : '');
+};
+
+/* ---------- Layering-Logik ---------- */
+function noteCat(note) {
+  const k = String(note).toLowerCase();
+  for (const [kw, cat] of NOTE_KEYWORDS) if (k.includes(kw)) return cat;
+  return null;
+}
+// Akkord-Profil eines Dufts: Anteil je Kategorie (Summe 1)
+function catVector(p) {
+  const v = {};
+  let total = 0;
+  const add = (notes, w) => notes.forEach((n) => { const c = noteCat(n); if (c) { v[c] = (v[c] || 0) + w; total += w; } });
+  add(p.top || [], 0.7); add(p.heart || [], 1); add(p.base || [], 1.2);
+  const fc = FAMILY_CAT[p.family];
+  if (fc) { const w = total ? total * 0.3 : 1; v[fc] = (v[fc] || 0) + w; total += w; }
+  if (total) for (const c in v) v[c] /= total;
+  return v;
+}
+function warmthOf(p) {
+  if (FAMILIES[p.family]) return FAMILIES[p.family].warmth;
+  const v = catVector(p);
+  return Object.entries(v).reduce((s, [c, w]) => s + CAT_WARMTH[c] * w, 0);
+}
+const sprays = (s) => (s >= 4 ? '1 Sprüher' : s === 3 ? '1–2 Sprüher' : '2–3 Sprüher');
+
+// Wie gut passen zwei Düfte geschichtet zusammen? (ohne Wetter/Anlass)
+function layerScore(a, b) {
+  const va = catVector(a), vb = catVector(b);
+  let comp = 0, best = null, bestVal = 0;
+  for (const ca in va) for (const cb in vb) {
+    const [s, why] = pairInfo(ca, cb);
+    const val = va[ca] * vb[cb] * s;
+    comp += val;
+    if (why && val > bestVal) { bestVal = val; best = why; }
+  }
+  let score = comp * 4;
+  const why = [];
+  if (best) why.push(best);
+
+  const sa = noteSet(a), sb = noteSet(b);
+  const shared = [...sa].filter((k) => sb.has(k));
+  const label = (k) => cap(allNotes(a).find((n) => noteKey(n) === k) || k);
+  if (shared.length >= 1 && shared.length <= 3) {
+    score += 0.3 + Math.min(shared.length, 2) * 0.2;
+    why.push(`${shared.length === 1 ? 'Gemeinsame Note' : 'Gemeinsame Noten'} ${shared.map(label).join(', ')} ${shared.length === 1 ? 'verbindet' : 'verbinden'} beide`);
+  }
+  const sim = similarity(sa, a.family, sb, b.family);
+  if (shared.length >= 5 || sim > 0.55) score -= 1.5; // zu ähnlich – bringt nichts Neues
+
+  const wa = warmthOf(a), wb = warmthOf(b), wd = Math.abs(wa - wb);
+  if (wd >= 0.8 && wd <= 3) { score += 0.5; if (why.length < 2) why.push('Spannender Kontrast aus leicht und schwer'); }
+  if ((a.strength || 3) + (b.strength || 3) >= 9) score -= 0.8;
+  if (allNotes(b).length < 3) score -= 1.2; // zu wenig Noten bekannt – Empfehlung wäre geraten
+  score += ((b.rating || 3) - 3) * 0.25;
+
+  // Eigene Erfahrung: schon zusammen getragen?
+  const together = db.wears.filter((w) => (w.perfumeId === a.id && w.layerId === b.id) || (w.perfumeId === b.id && w.layerId === a.id));
+  if (together.length) {
+    const c = together.reduce((s, w) => s + w.compliments, 0);
+    score += 0.4 + Math.min(1, c * 0.2);
+    why.unshift(c ? `Schon ${together.length}× zusammen getragen – ${plural(c, 'Kompliment', 'Komplimente')}` : `Schon ${together.length}× zusammen getragen`);
+  }
+
+  // Reihenfolge: das Wärmere/Schwerere zuerst als Basis
+  const baseFirst = wa > wb || (wa === wb && (a.strength || 3) >= (b.strength || 3));
+  const [under, over] = baseFirst ? [a, b] : [b, a];
+  const tip = `Zuerst ${under.name} (${sprays(under.strength || 3)}), dann ${over.name} darüber (${sprays(over.strength || 3)})`;
+  return { p: b, score, why: why.slice(0, 2), tip };
+}
+
+function layerPartners(p, n = 3) {
+  return db.perfumes.filter((x) => x.id !== p.id && x.fill > 0)
+    .map((x) => layerScore(p, x)).sort((a, b) => b.score - a.score).slice(0, n);
+}
+
+// Layering passend zu Wetter und Anlass
+function layerForToday(base, occ, prof) {
+  if (occ === 'gym') return [];
+  const quiet = occ === 'buero' || occ === 'uni';
+  return db.perfumes.filter((x) => x.id !== base.id && x.fill > 0).map((x) => {
+    const r = layerScore(base, x);
+    const combined = 0.6 * warmthOf(base) + 0.4 * warmthOf(x);
+    r.score -= Math.abs(combined - prof.warmth) * 1.2;
+    if (quiet && x.strength >= 4) r.score -= 1;
+    if (x.seasons.includes(prof.season)) r.score += 0.3;
+    const last = lastWornDate(x.id);
+    if (last) { const d = daysSince(last); if (d <= 0) r.score -= 2; else if (d === 1) r.score -= 0.8; }
+    return r;
+  }).sort((a, b) => b.score - a.score);
 }
 
 /* ---------- Wetter (Open-Meteo, ohne API-Key) ---------- */
@@ -469,6 +668,10 @@ function blindCheck(c) {
     fit, verdict, sub,
     loved: hits.slice(0, 8).map((x) => x.label),
     fresh: aff.filter((x) => x.a === 0).map((x) => x.label),
+    layer: layerPartners({
+      id: '__kandidat', name: c.name || 'der neue Duft', family: fam0 || null, strength: 3, rating: 3,
+      top: splitNotes(c.top), heart: splitNotes(c.heart), base: splitNotes(c.base),
+    }, 1)[0] || null,
     best: sims[0] && sims[0].sim >= 0.3 ? sims[0] : null,
     related: sims.slice(1, 3).filter((x) => x.sim >= 0.3),
     cand: { ...c },
@@ -545,7 +748,7 @@ function renderToday() {
     const p = perfumeById(w.perfumeId);
     if (!p) continue;
     h += `<div class="card worn-today"><div class="eyebrow">Heute getragen</div>
-      <div class="wt-row"><div><div class="p-name">${esc(p.name)}</div>
+      <div class="wt-row"><div><div class="p-name">${esc(wearName(w))}</div>
       <div class="muted small">${OCCASIONS[w.occasion].label} · ${plural(w.compliments, 'Kompliment', 'Komplimente')}</div></div>
       <button class="btn small" data-act="compliment" data-id="${w.id}" data-d="1">+1 Kompliment</button></div></div>`;
   }
@@ -590,6 +793,7 @@ function renderSuggestion() {
         <button class="btn" data-act="wear" data-id="${top.p.id}">✓ Heute getragen</button>
         <button class="btn ghost" data-act="next">↻ Anderer Vorschlag</button>
       </div>
+      ${renderLayerTip(top.p, r)}
     </div>
     ${list.length > 1 ? `<h3 class="sub-title">Auch eine gute Wahl</h3><div class="alt-list">
       ${list.slice(1, 3).map((x) => `<div class="alt"><div><div class="alt-name">${esc(x.p.name)}</div>
@@ -597,11 +801,32 @@ function renderSuggestion() {
         <button class="btn ghost small" data-act="wear" data-id="${x.p.id}">Getragen</button></div>`).join('')}</div>` : ''}`;
 }
 
-function addWear(perfumeId, occasion, date = todayStr()) {
-  db.wears.push({ id: uid(), perfumeId, date, occasion: occasion || 'alltag', compliments: 0, note: '' });
+function renderLayerTip(base, prof) {
+  if (state.occasion === 'gym') return '<div class="layer-box muted small">Fürs Gym lieber solo – Layering wird beim Sport schnell zu viel.</div>';
+  const key = `${base.id}|${state.occasion}`;
+  if (state.layerKey !== key) { state.layerKey = key; state.layerExcluded = []; }
+  let list = layerForToday(base, state.occasion, prof).filter((x) => !state.layerExcluded.includes(x.p.id));
+  if (!list.length) { state.layerExcluded = []; list = layerForToday(base, state.occasion, prof); }
+  const l = list[0];
+  if (!l) return '';
+  state.layerId = l.p.id;
+  return `
+    <div class="layer-box">
+      <div class="eyebrow">Layering-Tipp</div>
+      <div class="layer-combo">${esc(base.name)}<span class="plus">+</span>${esc(l.p.name)}</div>
+      ${l.why.length ? `<ul class="why">${l.why.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      <div class="layer-tip">💡 ${esc(l.tip)}</div>
+      <div class="btn-row">
+        <button class="btn small" data-act="wear-layer" data-id="${base.id}" data-layer="${l.p.id}">✓ So getragen</button>
+        <button class="btn ghost small" data-act="next-layer">↻ Anderer Partner</button>
+      </div>
+    </div>`;
+}
+
+function addWear(perfumeId, occasion, date = todayStr(), layerId = '') {
+  db.wears.push({ id: uid(), perfumeId, layerId: layerId && layerId !== perfumeId ? layerId : '', date, occasion: occasion || 'alltag', compliments: 0, note: '' });
   save();
-  const p = perfumeById(perfumeId);
-  toast(`${p ? p.name : 'Duft'} im Tagebuch eingetragen`);
+  toast(`${wearName(db.wears[db.wears.length - 1])} im Tagebuch eingetragen`);
 }
 
 /* ---------- Ansicht: Sammlung ---------- */
@@ -671,7 +896,20 @@ function openPerfume(id) {
     <div class="btn-row">
       <button class="btn" data-act="wear" data-id="${p.id}">✓ Heute getragen</button>
       <button class="btn ghost" data-act="edit-perfume" data-id="${p.id}">Bearbeiten</button>
-    </div>`);
+    </div>
+    ${renderLayerPartners(p)}`);
+}
+
+function renderLayerPartners(p) {
+  const list = layerPartners(p, 3);
+  if (!list.length) return '';
+  return `<div class="layer-list"><div class="group-label">Layering-Partner</div>
+    ${list.map((l) => `<div class="layer-row"><div>
+        <div class="alt-name">+ ${esc(l.p.name)}</div>
+        ${l.why[0] ? `<div class="muted small">${esc(l.why[0])}</div>` : ''}
+        <div class="layer-tip small">💡 ${esc(l.tip)}</div></div>
+      <button class="btn ghost small" data-act="wear-layer" data-id="${p.id}" data-layer="${l.p.id}">Getragen</button></div>`).join('')}
+  </div>`;
 }
 
 const chipGroup = (name, options, selected) => Object.entries(options).map(([k, l]) =>
@@ -744,7 +982,16 @@ function computeStats() {
   const king = [...rows].filter((r) => r.c > 0).sort((a, b) => b.c - a.c || (b.c / b.n) - (a.c / a.n))[0] || null;
   const forgotten = rows.filter((r) => r.p.fill > 0 && (!r.last || daysSince(r.last) >= FORGOTTEN_DAYS))
     .sort((a, b) => (b.last ? daysSince(b.last) : 1e9) - (a.last ? daysSince(a.last) : 1e9));
-  return { most, king, forgotten, totalC: rows.reduce((a, r) => a + r.c, 0) };
+  // Lieblings-Layering: meiste Komplimente, dann am häufigsten
+  const combos = {};
+  for (const w of db.wears) {
+    if (!w.layerId) continue;
+    const k = [w.perfumeId, w.layerId].sort().join('|');
+    combos[k] = combos[k] || { w, n: 0, c: 0 };
+    combos[k].n++; combos[k].c += w.compliments;
+  }
+  const combo = Object.values(combos).sort((a, b) => b.c - a.c || b.n - a.n)[0] || null;
+  return { most, king, forgotten, combo, totalC: db.wears.reduce((a, w) => a + w.compliments, 0) };
 }
 
 function renderDiary() {
@@ -760,6 +1007,9 @@ function renderDiary() {
       <div class="stat-card"><div class="eyebrow">👑 Kompliment-König</div>
         ${s.king ? `<div class="stat-name">${esc(s.king.p.name)}</div><div class="muted small">${plural(s.king.c, 'Kompliment', 'Komplimente')} · Ø ${(s.king.c / s.king.n).toLocaleString('de-DE', { maximumFractionDigits: 1 })} pro Tragen</div>` : '<div class="muted small">Noch keine Komplimente</div>'}</div>
     </div>
+    <div class="stat-card combo-card"><div class="eyebrow">🧪 Lieblings-Layering</div>
+      ${s.combo ? `<div class="stat-name">${esc(wearName(s.combo.w))}</div><div class="muted small">${s.combo.n}× getragen · ${plural(s.combo.c, 'Kompliment', 'Komplimente')}</div>`
+        : '<div class="muted small">Noch kein Layering eingetragen – nutze „So getragen“ beim Layering-Tipp.</div>'}</div>
     <div class="card">
       <div class="eyebrow">Vergessene Flaschen · über ${FORGOTTEN_DAYS} Tage im Regal</div>
       ${s.forgotten.length ? s.forgotten.map((r) => `
@@ -775,7 +1025,7 @@ function renderDiary() {
         return `<div class="entry">
           <div class="e-date">${fmtDate(w.date)}</div>
           <button class="e-main" data-act="edit-wear" data-id="${w.id}">
-            <div class="e-name">${esc(p ? p.name : '?')}</div>
+            <div class="e-name">${esc(wearName(w))}</div>
             <div class="muted small e-sub">${OCCASIONS[w.occasion].label}${w.note ? ` · ${esc(w.note)}` : ''}</div>
           </button>
           <div class="e-comp">
@@ -791,7 +1041,7 @@ function renderDiary() {
 
 function openWearForm(id, preset = {}) {
   if (!db.perfumes.length) { toast('Lege zuerst einen Duft an'); return; }
-  const w = id ? db.wears.find((x) => x.id === id) : { perfumeId: db.perfumes[0].id, date: todayStr(), occasion: 'alltag', compliments: 0, note: '', ...preset };
+  const w = id ? db.wears.find((x) => x.id === id) : { perfumeId: db.perfumes[0].id, layerId: '', date: todayStr(), occasion: 'alltag', compliments: 0, note: '', ...preset };
   if (!w) return;
   const sorted = [...db.perfumes].sort((a, b) => a.name.localeCompare(b.name, 'de'));
   openSheet(`
@@ -799,6 +1049,10 @@ function openWearForm(id, preset = {}) {
     <form id="wearForm" class="form" data-id="${esc(id || '')}">
       <label class="field"><span>Duft</span><select name="perfumeId">
         ${sorted.map((p) => `<option value="${p.id}" ${p.id === w.perfumeId ? 'selected' : ''}>${esc(p.name)}${p.brand ? ` – ${esc(p.brand)}` : ''}</option>`).join('')}
+      </select></label>
+      <label class="field"><span>Gelayert mit</span><select name="layerId">
+        <option value="">– kein Layering –</option>
+        ${sorted.map((p) => `<option value="${p.id}" ${p.id === w.layerId ? 'selected' : ''}>${esc(p.name)}${p.brand ? ` – ${esc(p.brand)}` : ''}</option>`).join('')}
       </select></label>
       <div class="two-col">
         <label class="field"><span>Datum</span><input type="date" name="date" value="${w.date}" max="${todayStr()}" required></label>
@@ -818,6 +1072,7 @@ function saveWearForm(form) {
   const f = new FormData(form);
   const data = {
     perfumeId: f.get('perfumeId'), date: f.get('date'), occasion: f.get('occasion'),
+    layerId: f.get('layerId') && f.get('layerId') !== f.get('perfumeId') ? f.get('layerId') : '',
     compliments: Math.max(0, parseInt(f.get('compliments'), 10) || 0), note: String(f.get('note') || '').trim(),
   };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) { toast('Bitte ein Datum wählen'); return; }
@@ -883,6 +1138,9 @@ function renderBlindResult(r) {
       <h4>Hast du schon etwas Ähnliches?</h4>
       ${simBox}
       ${r.related.length ? `<div class="muted small" style="margin-top:8px">Außerdem verwandt: ${r.related.map((x) => `${esc(x.p.name)} (${Math.round(x.sim * 100)} %)`).join(', ')}</div>` : ''}
+      ${r.layer && r.layer.score > 1 ? `<h4>Layering-Potenzial</h4>
+        <div class="similar-box good">Würde gut mit deinem <b>${esc(r.layer.p.name)}</b> harmonieren.
+          ${r.layer.why[0] ? `<div class="muted small">${esc(r.layer.why[0])}</div>` : ''}</div>` : ''}
       <div class="btn-row"><button class="btn ghost" data-act="blind-to-wish">♡ Auf die Wunschliste</button></div>
     </div>`;
 }
@@ -1038,6 +1296,12 @@ document.addEventListener('click', (e) => {
     case 'wear':
       addWear(id, state.view === 'today' ? state.occasion : (perfumeById(id)?.occasions[0] || 'alltag'));
       state.excluded = []; closeSheet(); renderAll(); break;
+    case 'wear-layer':
+      addWear(id, (state.view === 'today' && !sheet.open && state.occasion) || perfumeById(id)?.occasions[0] || 'alltag', todayStr(), t.dataset.layer);
+      state.excluded = []; closeSheet(); renderAll(); break;
+    case 'next-layer':
+      if (state.layerId) state.layerExcluded.push(state.layerId);
+      renderToday(); break;
     case 'compliment': {
       const w = db.wears.find((x) => x.id === id);
       if (!w) break;
@@ -1052,10 +1316,10 @@ document.addEventListener('click', (e) => {
     case 'edit-perfume': openPerfumeForm(id); break;
     case 'delete-perfume': {
       const p = perfumeById(id);
-      const n = wearsOf(id).length;
+      const n = db.wears.filter((w) => w.perfumeId === id).length;
       if (!p || !confirm(`„${p.name}“ löschen?${n ? `\nAuch ${n} Tagebuch-Einträge werden entfernt.` : ''}`)) break;
       db.perfumes = db.perfumes.filter((x) => x.id !== id);
-      db.wears = db.wears.filter((w) => w.perfumeId !== id);
+      db.wears = db.wears.filter((w) => w.perfumeId !== id).map((w) => (w.layerId === id ? { ...w, layerId: '' } : w));
       save(); closeSheet(); renderAll(); toast('Gelöscht');
       break;
     }
